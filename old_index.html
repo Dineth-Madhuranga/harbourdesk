@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Harbourdesk — Port City Colombo Meeting Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root{
+    --navy:#0B1F3A;
+    --navy-deep:#071527;
+    --navy-mid:#122845;
+    --teal:#1B998B;
+    --teal-dark:#0F6E56;
+    --teal-light:#E1F5EE;
+    --sand:#E8DCC4;
+    --sand-light:#F6F2E7;
+    --coral:#E4572E;
+    --coral-light:#FBE6DE;
+    --ink:#10233F;
+    --muted:#5B6B82;
+    --line:#DDE3EA;
+    --white:#FFFFFF;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(11,31,58,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',sans-serif;
+    background:var(--sand-light);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;font-weight:600;letter-spacing:-0.01em;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  a{color:var(--teal-dark);}
+  button{font-family:'Inter',sans-serif;cursor:pointer;}
+  input,select,textarea{font-family:'Inter',sans-serif;}
+
+  /* ---------- Topbar ---------- */
+  .topbar{
+    background:var(--navy);
+    color:var(--sand-light);
+    padding:14px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:3px solid var(--teal);
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{
+    width:30px;height:30px;border-radius:6px;
+    background:var(--teal);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--navy-deep);font-weight:700;font-family:'Space Grotesk',sans-serif;
+    font-size:15px;
+  }
+  .brand-text{display:flex;flex-direction:column;line-height:1.15;}
+  .brand-text b{font-family:'Space Grotesk',sans-serif;font-size:16px;}
+  .brand-text span{font-size:11px;color:var(--sand);opacity:0.8;}
+  .topbar-right{display:flex;align-items:center;gap:16px;font-size:13px;}
+  .pill{
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.16);
+    padding:5px 12px;border-radius:100px;font-size:12px;
+  }
+  .btn-ghost-top{
+    background:transparent;border:1px solid rgba(255,255,255,0.28);
+    color:var(--sand-light);padding:7px 14px;border-radius:7px;font-size:13px;
+  }
+  .btn-ghost-top:hover{background:rgba(255,255,255,0.08);}
+
+  /* ---------- Dock line divider (signature element) ---------- */
+  .dockline{
+    display:flex;align-items:center;gap:0;margin:28px 0 22px;
+  }
+  .dockline .rule{flex:1;height:1px;background:var(--line);position:relative;}
+  .dockline .rule::before{
+    content:"";position:absolute;top:-3px;left:0;right:0;height:7px;
+    background-image:repeating-linear-gradient(90deg, var(--teal) 0 2px, transparent 2px 14px);
+    opacity:0.55;
+  }
+  .dockline .label{
+    padding:0 14px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
+    color:var(--muted);white-space:nowrap;
+  }
+
+  /* ---------- Shell ---------- */
+  .shell{max-width:1180px;margin:0 auto;padding:0 28px 60px;}
+  .shell-narrow{max-width:640px;margin:0 auto;padding:0 24px 60px;}
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:var(--white);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 24px;box-shadow:var(--shadow);
+  }
+  .grid{display:grid;gap:16px;}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-2{grid-template-columns:1fr 1fr;}
+  @media (max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr);}.grid-3,.grid-2{grid-template-columns:1fr;}}
+
+  .stat{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;}
+  .stat .num{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:var(--navy);}
+  .stat .lbl{font-size:12px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:0.04em;}
+
+  /* ---------- Manifest ticket (meeting card, signature motif) ---------- */
+  .ticket{
+    display:flex;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);
+    overflow:hidden;margin-bottom:12px;
+  }
+  .ticket-code{
+    width:78px;flex-shrink:0;background:var(--navy);color:var(--sand);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono',monospace;font-size:11px;text-align:center;padding:8px 4px;
+    border-right:2px dashed var(--teal);gap:4px;
+  }
+  .ticket-code b{font-size:15px;color:var(--white);}
+  .ticket-body{flex:1;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;}
+  .ticket-main .title{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:var(--navy);}
+  .ticket-main .meta{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .ticket-actions{display:flex;gap:8px;align-items:center;}
+  .badge{
+    font-size:11px;padding:3px 9px;border-radius:100px;font-weight:600;letter-spacing:0.02em;
+  }
+  .badge-upcoming{background:var(--teal-light);color:var(--teal-dark);}
+  .badge-past{background:#EEF0F3;color:var(--muted);}
+  .badge-online{background:var(--coral-light);color:var(--coral);}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    border-radius:7px;padding:9px 16px;font-size:13.5px;font-weight:500;border:1px solid var(--line);
+    background:var(--white);color:var(--ink);transition:all .12s;
+  }
+  .btn:hover{border-color:var(--muted);}
+  .btn-primary{background:var(--teal);border-color:var(--teal);color:var(--white);}
+  .btn-primary:hover{background:var(--teal-dark);border-color:var(--teal-dark);}
+  .btn-navy{background:var(--navy);border-color:var(--navy);color:var(--white);}
+  .btn-navy:hover{background:var(--navy-deep);}
+  .btn-sm{padding:6px 11px;font-size:12.5px;}
+  .btn-danger{background:var(--white);border-color:var(--coral);color:var(--coral);}
+  .btn-danger:hover{background:var(--coral-light);}
+  .btn-block{width:100%;}
+  .btn:disabled{opacity:0.5;cursor:not-allowed;}
+
+  /* ---------- Forms ---------- */
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--navy);margin:14px 0 5px;}
+  label:first-child{margin-top:0;}
+  input[type=text],input[type=email],input[type=password],input[type=date],input[type=time],input[type=number],input[type=tel],select,textarea{
+    width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:7px;font-size:14px;color:var(--ink);
+    background:var(--sand-light);
+  }
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--teal);outline-offset:0;border-color:var(--teal);}
+  textarea{resize:vertical;min-height:70px;}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:4px;}
+  .field-row{display:flex;gap:12px;}
+  .field-row > div{flex:1;}
+
+  /* ---------- Nav tabs ---------- */
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;}
+  .tab{padding:10px 4px;font-size:13.5px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-right:20px;background:none;border-top:none;border-left:none;border-right:none;}
+  .tab.active{color:var(--navy);border-bottom-color:var(--teal);font-weight:600;}
+
+  /* ---------- Table ---------- */
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);}
+  td{padding:9px 10px;border-bottom:1px solid var(--line);}
+  tr:last-child td{border-bottom:none;}
+
+  /* ---------- Login screen ---------- */
+  .login-wrap{
+    min-height:calc(100vh - 62px);display:flex;align-items:center;justify-content:center;
+    background:
+      linear-gradient(180deg, var(--navy-deep) 0%, var(--navy) 55%, var(--navy-mid) 100%);
+    position:relative;overflow:hidden;
+  }
+  .login-wrap::before{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:140px;
+    background-image:repeating-linear-gradient(90deg, rgba(232,220,196,0.10) 0 3px, transparent 3px 34px);
+  }
+  .login-card{
+    position:relative;z-index:1;background:var(--white);border-radius:14px;padding:34px 34px 30px;
+    width:400px;box-shadow:0 20px 50px rgba(0,0,0,0.35);
+  }
+  .login-title{font-size:21px;margin-bottom:2px;}
+  .login-sub{font-size:13px;color:var(--muted);margin-bottom:22px;}
+  .role-switch{display:flex;background:var(--sand-light);border-radius:8px;padding:3px;margin-bottom:18px;}
+  .role-switch button{flex:1;background:none;border:none;padding:8px;border-radius:6px;font-size:13px;font-weight:600;color:var(--muted);}
+  .role-switch button.active{background:var(--white);color:var(--navy);box-shadow:0 1px 2px rgba(0,0,0,0.08);}
+  .demo-note{margin-top:16px;font-size:11.5px;color:var(--muted);background:var(--sand-light);border-radius:7px;padding:8px 10px;}
+  .err{color:var(--coral);font-size:12.5px;margin-top:8px;}
+
+  /* ---------- Public forms (register / feedback) ---------- */
+  .public-hero{
+    background:var(--navy);color:var(--sand-light);padding:30px 28px;border-radius:var(--radius) var(--radius) 0 0;
+  }
+  .public-hero .kicker{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);font-weight:600;}
+  .public-hero h1{font-size:22px;margin:6px 0 4px;color:var(--white);}
+  .public-hero .meta{font-size:13px;color:var(--sand);opacity:0.85;}
+  .public-body{background:var(--white);border:1px solid var(--line);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:26px 28px;}
+
+  .star-row{display:flex;gap:6px;margin:4px 0 4px;}
+  .star{font-size:30px;color:#D8DCE2;background:none;border:none;padding:0;line-height:1;}
+  .star.on{color:var(--coral);}
+
+  .empty{
+    text-align:center;padding:36px 20px;color:var(--muted);font-size:13.5px;
+    border:1px dashed var(--line);border-radius:var(--radius);
+  }
+
+  .kv{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 0;border-bottom:1px solid var(--line);}
+  .kv:last-child{border-bottom:none;}
+  .kv .k{color:var(--muted);}
+  .kv .v{font-weight:600;color:var(--navy);}
+
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:var(--navy);color:var(--white);padding:10px 18px;border-radius:8px;font-size:13px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.25);z-index:999;
+  }
+
+  .copybox{display:flex;gap:8px;align-items:center;background:var(--sand-light);border:1px solid var(--line);border-radius:7px;padding:8px 10px;}
+  .copybox input{border:none;background:none;padding:2px;font-size:12.5px;}
+  .copybox input:focus{outline:none;}
+
+  .section-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .section-title h2{font-size:17px;margin:0;}
+  .footer-note{font-size:11.5px;color:var(--muted);text-align:center;margin-top:40px;}
+  .checkin{width:16px;height:16px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">PC</div>
+    <div class="brand-text"><b>Harbourdesk</b><span>Port City Colombo — meeting portal</span></div>
+  </div>
+  <div class="topbar-right" id="topbarRight"></div>
+</div>
+
+<div id="localModeBanner"></div>
+<div id="app"></div>
+<div id="toastHost"></div>
+
+<script>
+/* =========================================================
+   Harbourdesk — demo meeting portal
+   Data is persisted via window.storage. Inside a Claude.ai
+   artifact this is shared across everyone viewing the link.
+   Standalone (e.g. on Vercel) there is no such backend, so
+   the fallback below stores data in this browser's
+   localStorage instead — meaning each visitor's browser has
+   its own data, not a shared live dataset. That's fine for a
+   click-through demo, but a real deployment needs a proper
+   backend + database so every department and HR admin see
+   the same data. This is a functional demo, not a
+   production auth system.
+   ========================================================= */
+if (!window.storage) {
+  window.storage = (function(){
+    const read = () => { try{ return JSON.parse(localStorage.getItem('harbourdesk_demo_store') || '{}'); }catch(e){ return {}; } };
+    const write = (obj) => localStorage.setItem('harbourdesk_demo_store', JSON.stringify(obj));
+    return {
+      async get(key, shared){ const db = read(); return (key in db) ? { key, value: db[key], shared: !!shared } : null; },
+      async set(key, value, shared){ const db = read(); db[key] = value; write(db); return { key, value, shared: !!shared }; },
+      async delete(key, shared){ const db = read(); const existed = key in db; delete db[key]; write(db); return { key, deleted: existed, shared: !!shared }; },
+      async list(prefix, shared){ const db = read(); const keys = Object.keys(db).filter(k => !prefix || k.startsWith(prefix)); return { keys, prefix, shared: !!shared }; }
+    };
+  })();
+  window.__HARBOURDESK_LOCAL_MODE__ = true;
+}
+
+
+let currentUser = null; // {role:'admin'|'dept', username, department, email}
+let route = { view: 'login' };
+
+const HR_CREDENTIALS = { username: 'hradmin', password: 'harbour2026' };
+
+function uid(prefix){ return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function esc(s){ return (s||'').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(d){ if(!d) return '—'; const dt = new Date(d+'T00:00:00'); return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+function baseUrl(){ return window.location.href.split('#')[0]; }
+function showToast(msg){
+  const host = document.getElementById('toastHost');
+  const el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  host.appendChild(el);
+  setTimeout(()=>el.remove(), 2600);
+}
+
+/* ---------- storage helpers ---------- */
+async function sGet(key, shared){
+  try{ const r = await window.storage.get(key, shared); return r ? r.value : null; }
+  catch(e){ return null; }
+}
+async function sSet(key, value, shared){
+  try{ await window.storage.set(key, typeof value === 'string' ? value : JSON.stringify(value), shared); }
+  catch(e){ console.error('storage set failed', e); }
+}
+async function sDelete(key, shared){
+  try{ await window.storage.delete(key, shared); }catch(e){}
+}
+async function sList(prefix, shared){
+  try{ const r = await window.storage.list(prefix, shared); return r ? r.keys : []; }
+  catch(e){ return []; }
+}
+async function sGetJSON(key, shared, fallback){
+  const v = await sGet(key, shared);
+  if(v===null) return fallback;
+  try{ return JSON.parse(v); }catch(e){ return fallback; }
+}
+
+/* ---------- data access layer ---------- */
+async function getAccounts(){
+  const keys = await sList('account:', true);
+  const out = [];
+  for(const k of keys){ const v = await sGetJSON(k, true, null); if(v) out.push(v); }
+  return out.sort((a,b)=> (a.department||'').localeCompare(b.department||''));
+}
+async function getMeetings(){
+  const keys = await sList('meeting:', true);
+  const out = [];
+  for(const k of keys){ const v = await sGetJSON(k, true, null); if(v) out.push(v); }
+  return out.sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
+}
+async function getMeeting(id){ return await sGetJSON('meeting:'+id, true, null); }
+async function getRegistrations(meetingId){
+  const keys = await sList('reg:'+meetingId+':', true);
+  const out = [];
+  for(const k of keys){ const v = await sGetJSON(k, true, null); if(v) out.push(v); }
+  return out.sort((a,b)=> a.timestamp - b.timestamp);
+}
+async function getFeedback(meetingId){
+  const keys = await sList('fb:'+meetingId+':', true);
+  const out = [];
+  for(const k of keys){ const v = await sGetJSON(k, true, null); if(v) out.push(v); }
+  return out.sort((a,b)=> a.timestamp - b.timestamp);
+}
+async function getRefreshments(meetingId){
+  return await sGetJSON('refresh:'+meetingId, true, { items: [] });
+}
+
+/* ---------- session ---------- */
+async function loadSession(){
+  const u = await sGetJSON('session', false, null);
+  if(u) currentUser = u;
+}
+async function saveSession(u){
+  currentUser = u;
+  await sSet('session', u, false);
+}
+async function clearSession(){
+  currentUser = null;
+  await sDelete('session', false);
+}
+
+/* ---------- routing ---------- */
+function parseHash(){
+  const h = window.location.hash.replace(/^#/, '');
+  if(h.startsWith('register/')) return { view:'register', id: h.slice(9) };
+  if(h.startsWith('feedback/')) return { view:'feedback', id: h.slice(9) };
+  return null;
+}
+window.addEventListener('hashchange', () => { render(); });
+
+/* ---------- init ---------- */
+function renderLocalModeBanner(){
+  const host = document.getElementById('localModeBanner');
+  if(window.__HARBOURDESK_LOCAL_MODE__){
+    host.innerHTML = `<div style="background:var(--coral-light);color:var(--coral);font-size:12.5px;text-align:center;padding:7px 12px;">
+      Demo mode — data is saved in this browser only, not shared across visitors. A live deployment needs a real backend and database.
+    </div>`;
+  }
+}
+
+async function init(){
+  renderLocalModeBanner();
+  await loadSession();
+  render();
+}
+
+async function render(){
+  const publicRoute = parseHash();
+  const app = document.getElementById('app');
+  const topbarRight = document.getElementById('topbarRight');
+
+  if(publicRoute){
+    topbarRight.innerHTML = '';
+    if(publicRoute.view === 'register') app.innerHTML = await renderPublicRegister(publicRoute.id);
+    else app.innerHTML = await renderPublicFeedback(publicRoute.id);
+    wirePublicForms(publicRoute);
+    return;
+  }
+
+  if(!currentUser){
+    topbarRight.innerHTML = '';
+    app.innerHTML = renderLogin();
+    wireLogin();
+    return;
+  }
+
+  topbarRight.innerHTML = `
+    <span class="pill">${currentUser.role==='admin' ? 'HR Admin' : esc(currentUser.department)+' dept.'}</span>
+    <span style="opacity:.85">${esc(currentUser.username)}</span>
+    <button class="btn-ghost-top" id="logoutBtn">Sign out</button>
+  `;
+  document.getElementById('logoutBtn').onclick = async () => { await clearSession(); route={view:'login'}; render(); };
+
+  if(currentUser.role === 'admin'){
+    app.innerHTML = await renderAdmin();
+    wireAdmin();
+  } else {
+    app.innerHTML = await renderDept();
+    wireDept();
+  }
+}
+
+/* =========================================================
+   LOGIN
+   ========================================================= */
+function renderLogin(){
+  return `
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="role-switch">
+        <button id="rsAdmin" class="active">HR admin</button>
+        <button id="rsDept">Department</button>
+      </div>
+      <div id="loginPane"></div>
+    </div>
+  </div>`;
+}
+function wireLogin(){
+  let role = 'admin';
+  const pane = document.getElementById('loginPane');
+  const rsAdmin = document.getElementById('rsAdmin');
+  const rsDept = document.getElementById('rsDept');
+
+  function draw(){
+    if(role === 'admin'){
+      pane.innerHTML = `
+        <h1 class="login-title">HR admin sign in</h1>
+        <p class="login-sub">Oversee every department, meeting and account.</p>
+        <label>Username</label>
+        <input type="text" id="lUser" placeholder="hradmin" value="hradmin"/>
+        <label>Password</label>
+        <input type="password" id="lPass" placeholder="Password" value="harbour2026"/>
+        <button class="btn btn-navy btn-block" style="margin-top:18px;" id="lSubmit">Sign in</button>
+        <div class="err" id="lErr"></div>
+        <div class="demo-note">Demo credentials are pre-filled — just select Sign in.</div>
+      `;
+      document.getElementById('lSubmit').onclick = () => {
+        const u = document.getElementById('lUser').value.trim();
+        const p = document.getElementById('lPass').value;
+        if(u===HR_CREDENTIALS.username && p===HR_CREDENTIALS.password){
+          saveSession({role:'admin', username:u}).then(render);
+        } else {
+          document.getElementById('lErr').textContent = 'Incorrect username or password.';
+        }
+      };
+    } else {
+      pane.innerHTML = `
+        <h1 class="login-title">Department sign in</h1>
+        <p class="login-sub">Schedule meetings and manage attendance for your department.</p>
+        <label>Username</label>
+        <input type="text" id="lUser" placeholder="e.g. finance01"/>
+        <label>Password</label>
+        <input type="password" id="lPass" placeholder="Password"/>
+        <button class="btn btn-primary btn-block" style="margin-top:18px;" id="lSubmit">Sign in</button>
+        <div class="err" id="lErr"></div>
+        <div class="demo-note">No account yet? Ask your HR admin to create one from the admin dashboard.</div>
+      `;
+      document.getElementById('lSubmit').onclick = async () => {
+        const u = document.getElementById('lUser').value.trim();
+        const p = document.getElementById('lPass').value;
+        const acc = await sGetJSON('account:'+u, true, null);
+        if(acc && acc.password === p && acc.active !== false){
+          saveSession({role:'dept', username:u, department:acc.department, email:acc.email}).then(render);
+        } else {
+          document.getElementById('lErr').textContent = 'Incorrect credentials, or the account is inactive.';
+        }
+      };
+    }
+  }
+  rsAdmin.onclick = () => { role='admin'; rsAdmin.classList.add('active'); rsDept.classList.remove('active'); draw(); };
+  rsDept.onclick = () => { role='dept'; rsDept.classList.add('active'); rsAdmin.classList.remove('active'); draw(); };
+  draw();
+}
+
+/* =========================================================
+   HR ADMIN DASHBOARD
+   ========================================================= */
+let adminTab = 'overview';
+let adminMeetingDetail = null;
+
+async function renderAdmin(){
+  const accounts = await getAccounts();
+  const meetings = await getMeetings();
+  const now = new Date().toISOString().slice(0,10);
+  const upcoming = meetings.filter(m => m.date >= now);
+  const past = meetings.filter(m => m.date < now);
+
+  let body = '';
+  if(adminMeetingDetail){
+    body = await renderMeetingDetail(adminMeetingDetail, 'admin');
+  } else if(adminTab === 'overview'){
+    body = `
+      <div class="grid grid-4" style="margin-bottom:24px;">
+        <div class="stat"><div class="num">${accounts.length}</div><div class="lbl">Department accounts</div></div>
+        <div class="stat"><div class="num">${meetings.length}</div><div class="lbl">Total meetings</div></div>
+        <div class="stat"><div class="num">${upcoming.length}</div><div class="lbl">Upcoming</div></div>
+        <div class="stat"><div class="num">${past.length}</div><div class="lbl">Completed</div></div>
+      </div>
+      <div class="section-title"><h2>All meetings, every department</h2></div>
+      ${meetings.length ? meetings.map(m=>ticketHtml(m, now)).join('') : `<div class="empty">No meetings scheduled yet across any department.</div>`}
+    `;
+  } else if(adminTab === 'accounts'){
+    body = `
+      <div class="grid grid-2" style="align-items:start;">
+        <div class="card">
+          <h2 style="font-size:16px;margin:0 0 4px;">Create a department account</h2>
+          <p class="hint">Give a department their own login to schedule and manage meetings.</p>
+          <label>Department name</label>
+          <input type="text" id="accDept" placeholder="e.g. Finance"/>
+          <label>Username</label>
+          <input type="text" id="accUser" placeholder="e.g. finance01"/>
+          <label>Password</label>
+          <input type="text" id="accPass" placeholder="Set a temporary password"/>
+          <label>Contact email</label>
+          <input type="email" id="accEmail" placeholder="finance@portcity.lk"/>
+          <button class="btn btn-primary btn-block" id="createAccBtn" style="margin-top:16px;">Create account</button>
+          <div class="err" id="accErr"></div>
+        </div>
+        <div class="card">
+          <h2 style="font-size:16px;margin:0 0 12px;">Department accounts</h2>
+          ${accounts.length ? `<table><thead><tr><th>Department</th><th>Username</th><th>Status</th><th></th></tr></thead><tbody>
+            ${accounts.map(a=>`
+              <tr>
+                <td>${esc(a.department)}</td>
+                <td class="mono">${esc(a.username)}</td>
+                <td>${a.active===false ? '<span class="badge badge-past">Inactive</span>' : '<span class="badge badge-upcoming">Active</span>'}</td>
+                <td style="text-align:right;"><button class="btn btn-sm ${a.active===false?'':'btn-danger'}" data-toggle="${esc(a.username)}">${a.active===false?'Reactivate':'Deactivate'}</button></td>
+              </tr>`).join('')}
+          </tbody></table>` : `<div class="empty">No department accounts yet.</div>`}
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="shell">
+      ${!adminMeetingDetail ? `
+      <div class="tabs" style="margin-top:22px;">
+        <button class="tab ${adminTab==='overview'?'active':''}" data-tab="overview">Overview</button>
+        <button class="tab ${adminTab==='accounts'?'active':''}" data-tab="accounts">Department accounts</button>
+      </div>` : `<div style="margin-top:22px;"></div>`}
+      ${body}
+      <div class="footer-note">Harbourdesk demo — Port City Colombo · data shown here is shared across everyone viewing this demo link.</div>
+    </div>
+  `;
+}
+
+function ticketHtml(m, now){
+  const isUpcoming = m.date >= now;
+  return `
+    <div class="ticket">
+      <div class="ticket-code">
+        <span>Meeting</span>
+        <b>${esc(m.code)}</b>
+      </div>
+      <div class="ticket-body">
+        <div class="ticket-main">
+          <div class="title">${esc(m.title)}</div>
+          <div class="meta">${esc(m.department)} · ${fmtDate(m.date)}, ${esc(m.time)} · ${m.locationType==='online' ? 'Online' : esc(m.location||'On-site')}</div>
+        </div>
+        <div class="ticket-actions">
+          <span class="badge ${isUpcoming?'badge-upcoming':'badge-past'}">${isUpcoming?'Upcoming':'Completed'}</span>
+          ${m.locationType==='online' ? `<span class="badge badge-online">Online</span>` : ''}
+          <button class="btn btn-sm" data-open="${m.id}">Open</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function wireAdmin(){
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => { adminTab = t.dataset.tab; adminMeetingDetail=null; render(); });
+  document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => { adminMeetingDetail = b.dataset.open; render(); });
+
+  const createBtn = document.getElementById('createAccBtn');
+  if(createBtn){
+    createBtn.onclick = async () => {
+      const dept = document.getElementById('accDept').value.trim();
+      const user = document.getElementById('accUser').value.trim();
+      const pass = document.getElementById('accPass').value.trim();
+      const email = document.getElementById('accEmail').value.trim();
+      const errEl = document.getElementById('accErr');
+      if(!dept || !user || !pass){ errEl.textContent = 'Department, username and password are required.'; return; }
+      const existing = await sGetJSON('account:'+user, true, null);
+      if(existing){ errEl.textContent = 'That username is already taken.'; return; }
+      await sSet('account:'+user, { username:user, password:pass, department:dept, email, active:true }, true);
+      showToast('Account created for ' + dept);
+      render();
+    };
+  }
+  document.querySelectorAll('[data-toggle]').forEach(b => b.onclick = async () => {
+    const user = b.dataset.toggle;
+    const acc = await sGetJSON('account:'+user, true, null);
+    if(acc){ acc.active = acc.active===false ? true : false; await sSet('account:'+user, acc, true); render(); }
+  });
+
+  wireMeetingDetailEvents('admin');
+}
+
+/* =========================================================
+   DEPARTMENT DASHBOARD
+   ========================================================= */
+let deptTab = 'meetings';
+let deptMeetingDetail = null;
+
+async function renderDept(){
+  const allMeetings = await getMeetings();
+  const meetings = allMeetings.filter(m => m.department === currentUser.department);
+  const now = new Date().toISOString().slice(0,10);
+
+  let body = '';
+  if(deptMeetingDetail){
+    body = await renderMeetingDetail(deptMeetingDetail, 'dept');
+  } else if(deptTab === 'meetings'){
+    body = `
+      <div class="section-title"><h2>${esc(currentUser.department)} — meetings</h2>
+        <button class="btn btn-primary btn-sm" data-tab="new">+ Schedule meeting</button>
+      </div>
+      ${meetings.length ? meetings.map(m=>ticketHtml(m, now)).join('') : `<div class="empty">No meetings scheduled yet. Create your first one.</div>`}
+    `;
+  } else if(deptTab === 'new'){
+    body = `
+      <div class="card" style="max-width:640px;">
+        <h2 style="font-size:16px;margin:0 0 4px;">Schedule a meeting</h2>
+        <p class="hint">Fill in the details below. A shareable registration link is generated automatically.</p>
+        <label>Meeting title</label>
+        <input type="text" id="mTitle" placeholder="e.g. Q3 budget review"/>
+        <div class="field-row">
+          <div><label>Date</label><input type="date" id="mDate"/></div>
+          <div><label>Time</label><input type="time" id="mTime"/></div>
+        </div>
+        <label>Format</label>
+        <select id="mLocType">
+          <option value="onsite">On-site</option>
+          <option value="online">Online</option>
+        </select>
+        <div id="mLocFields"></div>
+        <label>Description / agenda</label>
+        <textarea id="mDesc" placeholder="What is this meeting about?"></textarea>
+        <div class="dockline" style="margin:18px 0 6px;"><span class="label">Host details</span><div class="rule"></div></div>
+        <div class="field-row">
+          <div><label>Host name</label><input type="text" id="mHostName" placeholder="e.g. Dilani Perera"/></div>
+          <div><label>Host position</label><input type="text" id="mHostPosition" placeholder="e.g. Finance Manager"/></div>
+        </div>
+        <label>Host contact (email or phone)</label>
+        <input type="text" id="mHostContact" placeholder="e.g. dilani.p@portcity.lk / 077 123 4567"/>
+        <label>Notify emails (comma-separated)</label>
+        <textarea id="mEmails" placeholder="name1@portcity.lk, name2@portcity.lk"></textarea>
+        <button class="btn btn-primary btn-block" id="createMeetingBtn" style="margin-top:16px;">Create meeting</button>
+        <div class="err" id="mErr"></div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="shell">
+      ${!deptMeetingDetail ? `
+      <div class="tabs" style="margin-top:22px;">
+        <button class="tab ${deptTab==='meetings'?'active':''}" data-tab="meetings">My meetings</button>
+        <button class="tab ${deptTab==='new'?'active':''}" data-tab="new">Schedule meeting</button>
+      </div>` : `<div style="margin-top:22px;"></div>`}
+      ${body}
+      <div class="footer-note">Harbourdesk demo — Port City Colombo · signed in as ${esc(currentUser.department)}.</div>
+    </div>
+  `;
+}
+
+function wireDept(){
+  document.querySelectorAll('.tab, [data-tab]').forEach(t => t.onclick = () => { deptTab = t.dataset.tab; deptMeetingDetail=null; render(); });
+  document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => { deptMeetingDetail = b.dataset.open; render(); });
+
+  const locSel = document.getElementById('mLocType');
+  if(locSel){
+    const drawLocFields = () => {
+      const f = document.getElementById('mLocFields');
+      if(locSel.value === 'online'){
+        f.innerHTML = `<label>Meeting link (Zoom, Google Meet, Teams…)</label><input type="text" id="mOnlineLink" placeholder="https://meet.google.com/xyz-abcd"/>`;
+      } else {
+        f.innerHTML = `<label>Venue / room</label><input type="text" id="mLocation" placeholder="e.g. Harbour Tower, Level 12, Boardroom B"/>`;
+      }
+    };
+    locSel.onchange = drawLocFields;
+    drawLocFields();
+  }
+
+  const createMeetingBtn = document.getElementById('createMeetingBtn');
+  if(createMeetingBtn){
+    createMeetingBtn.onclick = async () => {
+      const title = document.getElementById('mTitle').value.trim();
+      const date = document.getElementById('mDate').value;
+      const time = document.getElementById('mTime').value;
+      const locationType = document.getElementById('mLocType').value;
+      const location = locationType==='onsite' ? (document.getElementById('mLocation').value.trim()) : '';
+      const onlineLink = locationType==='online' ? (document.getElementById('mOnlineLink').value.trim()) : '';
+      const description = document.getElementById('mDesc').value.trim();
+      const notifyEmails = document.getElementById('mEmails').value.trim();
+      const hostName = document.getElementById('mHostName').value.trim();
+      const hostPosition = document.getElementById('mHostPosition').value.trim();
+      const hostContact = document.getElementById('mHostContact').value.trim();
+      const errEl = document.getElementById('mErr');
+      if(!title || !date || !time){ errEl.textContent = 'Title, date and time are required.'; return; }
+
+      const id = uid('mt');
+      const code = 'PC-' + Math.floor(1000 + Math.random()*9000);
+      const meeting = {
+        id, code, title, department: currentUser.department, date, time,
+        locationType, location, onlineLink, description, notifyEmails,
+        hostName, hostPosition, hostContact,
+        discussionSummary: '', suggestions: '', furtherNotes: '',
+        createdBy: currentUser.username, createdAt: Date.now()
+      };
+      await sSet('meeting:'+id, meeting, true);
+      showToast('Meeting scheduled — registration link ready');
+      deptTab = 'meetings';
+      deptMeetingDetail = id;
+      render();
+    };
+  }
+
+  wireMeetingDetailEvents('dept');
+}
+
+/* =========================================================
+   MEETING DETAIL (shared by admin + dept views)
+   ========================================================= */
+async function renderMeetingDetail(meetingId, mode){
+  const m = await getMeeting(meetingId);
+  if(!m) return `<div class="empty">Meeting not found.</div>`;
+  const regs = await getRegistrations(meetingId);
+  const feedback = await getFeedback(meetingId);
+  const refresh = await getRefreshments(meetingId);
+  const checkedIn = regs.filter(r=>r.checkedIn).length;
+  const avgRating = feedback.length ? (feedback.reduce((s,f)=>s+f.rating,0)/feedback.length).toFixed(1) : '—';
+  const regLink = baseUrl() + '#register/' + meetingId;
+  const fbLink = baseUrl() + '#feedback/' + meetingId;
+
+  return `
+    <button class="btn btn-sm" id="backBtn" style="margin-bottom:16px;">&larr; Back</button>
+
+    <div class="ticket" style="margin-bottom:20px;">
+      <div class="ticket-code"><span>Meeting</span><b>${esc(m.code)}</b></div>
+      <div class="ticket-body">
+        <div class="ticket-main">
+          <div class="title" style="font-size:18px;">${esc(m.title)}</div>
+          <div class="meta">${esc(m.department)} · ${fmtDate(m.date)}, ${esc(m.time)} · ${m.locationType==='online' ? ('Online' + (m.onlineLink? ' — <a href="'+esc(m.onlineLink)+'" target="_blank" rel="noopener">join link</a>':'')) : esc(m.location||'On-site')}</div>
+        </div>
+        <div class="ticket-actions">
+          <button class="btn btn-primary btn-sm" id="pdfBtn"><span id="pdfBtnLabel">Download PDF report</span></button>
+        </div>
+      </div>
+    </div>
+
+    ${m.description ? `<div class="card" style="margin-bottom:20px;"><b style="font-size:12.5px;color:var(--muted);">AGENDA</b><p style="margin:6px 0 0;font-size:14px;">${esc(m.description)}</p></div>` : ''}
+
+    ${(m.hostName || m.hostPosition || m.hostContact) ? `
+    <div class="card" style="margin-bottom:20px;">
+      <b style="font-size:12.5px;color:var(--muted);">HOST</b>
+      <div class="grid grid-3" style="margin-top:8px;">
+        <div class="kv" style="border:none;padding:2px 0;"><span class="k">Name</span><span class="v">${esc(m.hostName||'—')}</span></div>
+        <div class="kv" style="border:none;padding:2px 0;"><span class="k">Position</span><span class="v">${esc(m.hostPosition||'—')}</span></div>
+        <div class="kv" style="border:none;padding:2px 0;"><span class="k">Contact</span><span class="v">${esc(m.hostContact||'—')}</span></div>
+      </div>
+    </div>` : ''}
+
+    <div class="grid grid-4" style="margin-bottom:20px;">
+      <div class="stat"><div class="num">${regs.length}</div><div class="lbl">Registered</div></div>
+      <div class="stat"><div class="num">${checkedIn}</div><div class="lbl">Attended</div></div>
+      <div class="stat"><div class="num">${avgRating}</div><div class="lbl">Avg. feedback</div></div>
+      <div class="stat"><div class="num">${feedback.length}</div><div class="lbl">Feedback replies</div></div>
+    </div>
+
+    <div class="grid grid-2" style="align-items:start;margin-bottom:20px;">
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 10px;">Registration link</h2>
+        <p class="hint" style="margin-top:0;">Share so attendees can register their name, email, position and contact.</p>
+        <div class="copybox"><input type="text" readonly value="${esc(regLink)}" id="regLinkInput"/><button class="btn btn-sm" data-copy="regLinkInput">Copy</button></div>
+        <h2 style="font-size:15px;margin:18px 0 10px;">Feedback link</h2>
+        <p class="hint" style="margin-top:0;">Share after the meeting to collect open feedback.</p>
+        <div class="copybox"><input type="text" readonly value="${esc(fbLink)}" id="fbLinkInput"/><button class="btn btn-sm" data-copy="fbLinkInput">Copy</button></div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 10px;">Send notification</h2>
+        <p class="hint" style="margin-top:0;">Opens your email client with the meeting details and registration link pre-filled, addressed to the emails below.</p>
+        <label>Recipients</label>
+        <textarea id="notifyEditEmails">${esc(m.notifyEmails||'')}</textarea>
+        <button class="btn btn-navy btn-block" id="sendNotifyBtn" style="margin-top:12px;">Open email to notify</button>
+        <div class="hint" style="margin-top:8px;">Demo note: this drafts an email in your own mail app. A live deployment would send automatically via an email API.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="section-title"><h2 style="font-size:15px;">Attendance</h2></div>
+      ${regs.length ? `<table><thead><tr><th></th><th>Name</th><th>Email</th><th>Position</th><th>Contact</th></tr></thead><tbody>
+        ${regs.map(r=>`
+          <tr>
+            <td><input type="checkbox" class="checkin" data-checkin="${esc(r.id)}" ${r.checkedIn?'checked':''}/></td>
+            <td>${esc(r.name)}</td><td>${esc(r.email)}</td><td>${esc(r.position||'—')}</td><td>${esc(r.contact||'—')}</td>
+          </tr>`).join('')}
+      </tbody></table>` : `<div class="empty">No one has registered yet — share the registration link above.</div>`}
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="section-title"><h2 style="font-size:15px;">Refreshments</h2></div>
+      <table><thead><tr><th>Item</th><th>Ordered</th><th>Used</th><th>Leftover</th><th></th></tr></thead><tbody id="refreshRows">
+        ${refresh.items.length ? refresh.items.map((it,idx)=>`
+          <tr>
+            <td>${esc(it.name)}</td>
+            <td><input type="number" min="0" style="width:70px;" data-ordered="${idx}" value="${it.ordered}"/></td>
+            <td><input type="number" min="0" style="width:70px;" data-used="${idx}" value="${it.used}"/></td>
+            <td>${Math.max(0, it.ordered-it.used)}</td>
+            <td><button class="btn btn-sm btn-danger" data-removeitem="${idx}">Remove</button></td>
+          </tr>`).join('') : `<tr><td colspan="5" style="color:var(--muted);">No refreshment items logged yet.</td></tr>`}
+      </tbody></table>
+      <div class="field-row" style="margin-top:14px;align-items:flex-end;">
+        <div><label>Item</label><input type="text" id="newRefName" placeholder="e.g. Bottled water"/></div>
+        <div style="max-width:110px;"><label>Ordered</label><input type="number" min="0" id="newRefOrdered" value="0"/></div>
+        <div style="max-width:110px;"><label>Used</label><input type="number" min="0" id="newRefUsed" value="0"/></div>
+        <div style="flex:0;"><button class="btn btn-sm" id="addRefBtn" style="white-space:nowrap;">Add item</button></div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="saveRefBtn" style="margin-top:12px;">Save refreshments</button>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="section-title"><h2 style="font-size:15px;">Meeting minutes</h2></div>
+      <label>Summary — what was discussed</label>
+      <textarea id="minDiscussion" placeholder="Key points, decisions and outcomes from the meeting">${esc(m.discussionSummary)}</textarea>
+      <label>Suggestions</label>
+      <textarea id="minSuggestions" placeholder="Suggestions raised during or after the meeting">${esc(m.suggestions)}</textarea>
+      <label>Further notes</label>
+      <textarea id="minFurther" placeholder="Anything else worth recording">${esc(m.furtherNotes)}</textarea>
+      <button class="btn btn-primary btn-sm" id="saveMinutesBtn" style="margin-top:12px;">Save minutes</button>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><h2 style="font-size:15px;">Feedback</h2></div>
+      ${feedback.length ? feedback.map(f=>`
+        <div class="kv" style="display:block;padding:10px 0;">
+          <div style="display:flex;justify-content:space-between;">
+            <b style="color:var(--navy);">${esc(f.name||'Anonymous')}</b>
+            <span class="mono" style="color:var(--coral);">${'★'.repeat(f.rating)}${'☆'.repeat(5-f.rating)}</span>
+          </div>
+          ${f.comments ? `<p style="margin:4px 0 0;font-size:13.5px;color:var(--muted);">${esc(f.comments)}</p>` : ''}
+        </div>
+      `).join('') : `<div class="empty">No feedback submitted yet.</div>`}
+    </div>
+  `;
+}
+
+function wireMeetingDetailEvents(mode){
+  const backBtn = document.getElementById('backBtn');
+  if(backBtn) backBtn.onclick = () => { if(mode==='admin') adminMeetingDetail=null; else deptMeetingDetail=null; render(); };
+
+  document.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => {
+    const input = document.getElementById(b.dataset.copy);
+    input.select(); input.setSelectionRange(0, 99999);
+    try{ document.execCommand('copy'); showToast('Link copied'); }catch(e){ showToast('Select and copy the link manually'); }
+  });
+
+  document.querySelectorAll('[data-checkin]').forEach(cb => cb.onchange = async () => {
+    const id = cb.dataset.checkin;
+    const meetingId = mode==='admin' ? adminMeetingDetail : deptMeetingDetail;
+    const key = 'reg:'+meetingId+':'+id;
+    const reg = await sGetJSON(key, true, null);
+    if(reg){ reg.checkedIn = cb.checked; await sSet(key, reg, true); }
+  });
+
+  const sendNotifyBtn = document.getElementById('sendNotifyBtn');
+  if(sendNotifyBtn){
+    sendNotifyBtn.onclick = async () => {
+      const meetingId = mode==='admin' ? adminMeetingDetail : deptMeetingDetail;
+      const m = await getMeeting(meetingId);
+      const emails = document.getElementById('notifyEditEmails').value.trim();
+      m.notifyEmails = emails;
+      await sSet('meeting:'+meetingId, m, true);
+      const link = baseUrl() + '#register/' + meetingId;
+      const subject = encodeURIComponent('Meeting invite: ' + m.title);
+      const bodyText = `You are invited to ${m.title}\nDepartment: ${m.department}\nDate: ${m.date} at ${m.time}\nFormat: ${m.locationType==='online' ? ('Online — '+(m.onlineLink||'link to follow')) : ('On-site — '+(m.location||'venue to follow'))}\n\nPlease register here: ${link}`;
+      const body = encodeURIComponent(bodyText);
+      const bcc = emails.split(',').map(s=>s.trim()).filter(Boolean).join(',');
+      window.location.href = `mailto:?bcc=${bcc}&subject=${subject}&body=${body}`;
+    };
+  }
+
+  const addRefBtn = document.getElementById('addRefBtn');
+  if(addRefBtn){
+    addRefBtn.onclick = async () => {
+      const meetingId = mode==='admin' ? adminMeetingDetail : deptMeetingDetail;
+      const name = document.getElementById('newRefName').value.trim();
+      const ordered = parseInt(document.getElementById('newRefOrdered').value)||0;
+      const used = parseInt(document.getElementById('newRefUsed').value)||0;
+      if(!name) return;
+      const refresh = await getRefreshments(meetingId);
+      refresh.items.push({name, ordered, used});
+      await sSet('refresh:'+meetingId, refresh, true);
+      render();
+    };
+  }
+
+  const saveRefBtn = document.getElementById('saveRefBtn');
+  if(saveRefBtn){
+    saveRefBtn.onclick = async () => {
+      const meetingId = mode==='admin' ? adminMeetingDetail : deptMeetingDetail;
+      const refresh = await getRefreshments(meetingId);
+      document.querySelectorAll('[data-ordered]').forEach(inp => {
+        const idx = parseInt(inp.dataset.ordered);
+        if(refresh.items[idx]) refresh.items[idx].ordered = parseInt(inp.value)||0;
+      });
+      document.querySelectorAll('[data-used]').forEach(inp => {
+        const idx = parseInt(inp.dataset.used);
+        if(refresh.items[idx]) refresh.items[idx].used = parseInt(inp.value)||0;
+      });
+      await sSet('refresh:'+meetingId, refresh, true);
+      showToast('Refreshments saved');
+      render();
+    };
+  }
+
+  document.querySelectorAll('[data-removeitem]').forEach(b => b.onclick = async () => {
+    const meetingId = mode==='admin' ? adminMeetingDetail : deptMeetingDetail;
+    const idx = parseInt(b.dataset.removeitem);
+    const refresh = await getRefreshments(meetingId);
+    refresh.items.splice(idx,1);
+    await sSet('refresh:'+meetingId, refresh, true);
+    render();
+  });
+
+  const saveMinutesBtn = document.getElementById('saveMinutesBtn');
+  if(saveMinutesBtn){
+    saveMinutesBtn.onclick = async () => {
+      const meetingId = mode==='admin' ? adminMeetingDetail : deptMeetingDetail;
+      const m = await getMeeting(meetingId);
+      m.discussionSummary = document.getElementById('minDiscussion').value.trim();
+      m.suggestions = document.getElementById('minSuggestions').value.trim();
+      m.furtherNotes = document.getElementById('minFurther').value.trim();
+      await sSet('meeting:'+meetingId, m, true);
+      showToast('Meeting minutes saved');
+    };
+  }
+
+  const pdfBtn = document.getElementById('pdfBtn');
+  if(pdfBtn){
+    pdfBtn.onclick = async () => {
+      const meetingId = mode==='admin' ? adminMeetingDetail : deptMeetingDetail;
+      const label = document.getElementById('pdfBtnLabel');
+      const original = label.textContent;
+      label.textContent = 'Generating…';
+      pdfBtn.disabled = true;
+      try{
+        await generatePDFReport(meetingId);
+      } catch(e){
+        console.error(e);
+        showToast('Could not generate the PDF — please try again');
+      }
+      label.textContent = original;
+      pdfBtn.disabled = false;
+    };
+  }
+}
+
+/* =========================================================
+   PDF REPORT GENERATION
+   ========================================================= */
+async function generatePDFReport(meetingId){
+  const m = await getMeeting(meetingId);
+  const regs = await getRegistrations(meetingId);
+  const feedback = await getFeedback(meetingId);
+  const refresh = await getRefreshments(meetingId);
+  const checkedIn = regs.filter(r=>r.checkedIn).length;
+  const avgRating = feedback.length ? (feedback.reduce((s,f)=>s+f.rating,0)/feedback.length).toFixed(1) : 'No ratings yet';
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 40;
+  const navy = [11, 31, 58];
+  const teal = [15, 110, 86];
+  const muted = [91, 107, 130];
+  const ink = [16, 35, 63];
+  let y = margin;
+
+  function ensureSpace(needed){
+    if(y + needed > pageH - 50){ doc.addPage(); y = margin; }
+  }
+  function sectionTitle(text){
+    ensureSpace(30);
+    doc.setFillColor(...teal);
+    doc.rect(margin, y, 3, 14, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(11.5); doc.setTextColor(...navy);
+    doc.text(text.toUpperCase(), margin + 10, y + 11);
+    y += 24;
+  }
+  function bodyText(text, opts){
+    opts = opts || {};
+    const content = (text && text.trim()) ? text.trim() : (opts.emptyLabel || 'Not recorded.');
+    doc.setFont('helvetica','normal'); doc.setFontSize(10.5);
+    doc.setTextColor(...(content===opts.emptyLabel ? muted : ink));
+    const lines = doc.splitTextToSize(content, pageW - margin*2);
+    ensureSpace(lines.length * 14 + 10);
+    doc.text(lines, margin, y);
+    y += lines.length * 14 + 14;
+  }
+  function kvGrid(pairs){
+    const colW = (pageW - margin*2) / 2;
+    ensureSpace(Math.ceil(pairs.length/2) * 20 + 6);
+    pairs.forEach((p, i) => {
+      const col = i % 2, row = Math.floor(i/2);
+      const x = margin + col*colW;
+      const yy = y + row*20;
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...muted);
+      doc.text(p[0].toUpperCase(), x, yy);
+      doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(...ink);
+      doc.text(p[1] || '—', x, yy + 13);
+    });
+    y += Math.ceil(pairs.length/2) * 20 + 16;
+  }
+
+  /* Header */
+  doc.setFillColor(...navy);
+  doc.rect(0, 0, pageW, 70, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(255,255,255);
+  doc.text('Harbourdesk — Meeting summary report', margin, 32);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(225,232,238);
+  doc.text('Port City Colombo', margin, 48);
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(...[27,153,139]);
+  doc.text(m.code, pageW - margin, 32, { align: 'right' });
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(225,232,238);
+  doc.text('Generated ' + new Date().toLocaleString('en-GB'), pageW - margin, 48, { align: 'right' });
+  y = 96;
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(...navy);
+  doc.text(m.title, margin, y);
+  y += 26;
+
+  /* Department & schedule details */
+  sectionTitle('Department & schedule details');
+  kvGrid([
+    ['Department', m.department],
+    ['Meeting code', m.code],
+    ['Date', fmtDate(m.date)],
+    ['Time', m.time],
+    ['Format', m.locationType==='online' ? 'Online' : 'On-site'],
+    [m.locationType==='online' ? 'Online link' : 'Venue', m.locationType==='online' ? (m.onlineLink||'—') : (m.location||'—')],
+    ['Scheduled by', m.createdBy]
+  ]);
+
+  /* Host person details */
+  sectionTitle('Host person details');
+  kvGrid([
+    ['Host name', m.hostName],
+    ['Position', m.hostPosition],
+    ['Contact', m.hostContact]
+  ]);
+
+  /* Meeting summary — what discussed */
+  sectionTitle('Meeting summary — what was discussed');
+  bodyText(m.discussionSummary, { emptyLabel: 'No discussion summary recorded yet.' });
+
+  /* Attendance in detail */
+  sectionTitle('Attendance in detail (' + checkedIn + ' of ' + regs.length + ' registered attended)');
+  if(regs.length){
+    ensureSpace(60);
+    doc.autoTable({
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['Name','Email','Position','Contact','Attended']],
+      body: regs.map(r => [r.name, r.email, r.position||'—', r.contact||'—', r.checkedIn ? 'Yes' : 'No']),
+      styles: { font:'helvetica', fontSize: 9, textColor: ink, cellPadding: 5 },
+      headStyles: { fillColor: navy, textColor: [255,255,255], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [246, 242, 231] },
+      theme: 'grid'
+    });
+    y = doc.lastAutoTable.finalY + 20;
+  } else {
+    bodyText('', { emptyLabel: 'No one registered for this meeting.' });
+  }
+
+  /* Refreshment report */
+  sectionTitle('Refreshment report');
+  if(refresh.items.length){
+    ensureSpace(60);
+    doc.autoTable({
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['Item','Ordered','Used','Leftover']],
+      body: refresh.items.map(it => [it.name, String(it.ordered), String(it.used), String(Math.max(0, it.ordered-it.used))]),
+      styles: { font:'helvetica', fontSize: 9, textColor: ink, cellPadding: 5 },
+      headStyles: { fillColor: navy, textColor: [255,255,255], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [246, 242, 231] },
+      theme: 'grid'
+    });
+    y = doc.lastAutoTable.finalY + 20;
+  } else {
+    bodyText('', { emptyLabel: 'No refreshment items were logged for this meeting.' });
+  }
+
+  /* Suggestions */
+  sectionTitle('Suggestions');
+  bodyText(m.suggestions, { emptyLabel: 'No suggestions recorded.' });
+
+  /* Feedback provided */
+  sectionTitle('Feedback provided (average rating: ' + avgRating + (feedback.length ? ' / 5' : '') + ')');
+  if(feedback.length){
+    ensureSpace(60);
+    doc.autoTable({
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['Name','Rating','Comments']],
+      body: feedback.map(f => [f.name || 'Anonymous', f.rating + ' / 5', f.comments || '—']),
+      styles: { font:'helvetica', fontSize: 9, textColor: ink, cellPadding: 5, valign: 'top' },
+      headStyles: { fillColor: navy, textColor: [255,255,255], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [246, 242, 231] },
+      columnStyles: { 2: { cellWidth: pageW - margin*2 - 160 } },
+      theme: 'grid'
+    });
+    y = doc.lastAutoTable.finalY + 20;
+  } else {
+    bodyText('', { emptyLabel: 'No feedback submitted yet.' });
+  }
+
+  /* Further notes */
+  sectionTitle('Further notes');
+  bodyText(m.furtherNotes, { emptyLabel: 'No further notes recorded.' });
+
+  /* Footer with page numbers */
+  const pageCount = doc.internal.getNumberOfPages();
+  for(let i=1; i<=pageCount; i++){
+    doc.setPage(i);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...muted);
+    doc.text('Harbourdesk demo — Port City Colombo', margin, pageH - 25);
+    doc.text('Page ' + i + ' of ' + pageCount, pageW - margin, pageH - 25, { align: 'right' });
+  }
+
+  doc.save('Meeting-report-' + m.code + '.pdf');
+}
+
+/* =========================================================
+   PUBLIC: REGISTRATION PAGE
+   ========================================================= */
+async function renderPublicRegister(meetingId){
+  const m = await getMeeting(meetingId);
+  if(!m) return `<div class="shell-narrow"><div class="empty" style="margin-top:60px;">This meeting link is no longer valid.</div></div>`;
+  return `
+    <div class="shell-narrow" style="padding-top:36px;">
+      <div class="public-hero">
+        <div class="kicker">Meeting registration</div>
+        <h1>${esc(m.title)}</h1>
+        <div class="meta">${esc(m.department)} · ${fmtDate(m.date)}, ${esc(m.time)} · ${m.locationType==='online'?'Online':esc(m.location||'On-site')}</div>
+      </div>
+      <div class="public-body" id="regFormWrap">
+        <label>Full name</label>
+        <input type="text" id="rName" placeholder="Your full name"/>
+        <label>Email</label>
+        <input type="email" id="rEmail" placeholder="you@company.com"/>
+        <label>Position</label>
+        <input type="text" id="rPosition" placeholder="e.g. Project Engineer"/>
+        <label>Contact number</label>
+        <input type="tel" id="rContact" placeholder="e.g. 077 123 4567"/>
+        <button class="btn btn-primary btn-block" id="regSubmitBtn" style="margin-top:16px;">Confirm registration</button>
+        <div class="err" id="regErr"></div>
+      </div>
+    </div>
+  `;
+}
+
+/* =========================================================
+   PUBLIC: FEEDBACK PAGE
+   ========================================================= */
+async function renderPublicFeedback(meetingId){
+  const m = await getMeeting(meetingId);
+  if(!m) return `<div class="shell-narrow"><div class="empty" style="margin-top:60px;">This feedback link is no longer valid.</div></div>`;
+  return `
+    <div class="shell-narrow" style="padding-top:36px;">
+      <div class="public-hero">
+        <div class="kicker">Meeting feedback</div>
+        <h1>${esc(m.title)}</h1>
+        <div class="meta">${esc(m.department)} · ${fmtDate(m.date)}, ${esc(m.time)}</div>
+      </div>
+      <div class="public-body" id="fbFormWrap">
+        <label>Your rating</label>
+        <div class="star-row" id="starRow">
+          ${[1,2,3,4,5].map(n=>`<button type="button" class="star" data-star="${n}">★</button>`).join('')}
+        </div>
+        <input type="hidden" id="fbRating" value="0"/>
+        <label>Name (optional)</label>
+        <input type="text" id="fbName" placeholder="Leave blank to stay anonymous"/>
+        <label>Comments</label>
+        <textarea id="fbComments" placeholder="What worked, what could be better?"></textarea>
+        <button class="btn btn-primary btn-block" id="fbSubmitBtn" style="margin-top:16px;">Submit feedback</button>
+        <div class="err" id="fbErr"></div>
+      </div>
+    </div>
+  `;
+}
+
+function wirePublicForms(routeInfo){
+  if(routeInfo.view === 'register'){
+    const btn = document.getElementById('regSubmitBtn');
+    if(!btn) return;
+    btn.onclick = async () => {
+      const name = document.getElementById('rName').value.trim();
+      const email = document.getElementById('rEmail').value.trim();
+      const position = document.getElementById('rPosition').value.trim();
+      const contact = document.getElementById('rContact').value.trim();
+      const errEl = document.getElementById('regErr');
+      if(!name || !email){ errEl.textContent = 'Name and email are required.'; return; }
+      const regId = uid('r');
+      await sSet('reg:'+routeInfo.id+':'+regId, { id:regId, name, email, position, contact, checkedIn:false, timestamp: Date.now() }, true);
+      document.getElementById('regFormWrap').innerHTML = `<div class="empty" style="border:none;padding:20px 0;"><b style="color:var(--navy);font-size:15px;">You're registered.</b><br/>A confirmation isn't emailed automatically in this demo, but the department will see you on their attendee list.</div>`;
+    };
+  } else {
+    let rating = 0;
+    document.querySelectorAll('[data-star]').forEach(s => s.onclick = () => {
+      rating = parseInt(s.dataset.star);
+      document.getElementById('fbRating').value = rating;
+      document.querySelectorAll('[data-star]').forEach(st => st.classList.toggle('on', parseInt(st.dataset.star) <= rating));
+    });
+    const btn = document.getElementById('fbSubmitBtn');
+    if(!btn) return;
+    btn.onclick = async () => {
+      const errEl = document.getElementById('fbErr');
+      if(rating === 0){ errEl.textContent = 'Please select a star rating.'; return; }
+      const name = document.getElementById('fbName').value.trim();
+      const comments = document.getElementById('fbComments').value.trim();
+      const fbId = uid('f');
+      await sSet('fb:'+routeInfo.id+':'+fbId, { id:fbId, name, rating, comments, timestamp: Date.now() }, true);
+      document.getElementById('fbFormWrap').innerHTML = `<div class="empty" style="border:none;padding:20px 0;"><b style="color:var(--navy);font-size:15px;">Thanks for your feedback.</b><br/>It has been added to the meeting summary report.</div>`;
+    };
+  }
+}
+
+init();
+</script>
+</body>
+</html>
